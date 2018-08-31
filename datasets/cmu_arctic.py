@@ -14,7 +14,8 @@ def build_from_path(hparams, in_dir, out_dir, num_workers=1, tqdm=lambda x: x):
     executor = ProcessPoolExecutor(max_workers=num_workers)
     futures = []
 
-    speakers = cmu_arctic.available_speakers
+    # speakers = cmu_arctic.available_speakers
+    speakers = ['bdl', 'clb', 'rms', 'slt']
 
     wd = cmu_arctic.WavFileDataSource(in_dir, speakers=speakers)
     wav_paths = wd.collect_files()
@@ -32,7 +33,8 @@ def _process_utterance(out_dir, index, speaker_id, wav_path, text, hparams):
     # Load the audio to a numpy array. Resample if needed
     wav = audio.load_wav(wav_path)
     if hparams.use_injected_noise:
-        noise = np.random.normal(0.0, 1.0 / hparams.quantize_channels, wav.shape)
+        noise = np.random.normal(
+            0.0, 1.0 / hparams.quantize_channels, wav.shape)
         wav += noise
 
     wav, _ = librosa.effects.trim(wav, top_db=20)
@@ -46,7 +48,8 @@ def _process_utterance(out_dir, index, speaker_id, wav_path, text, hparams):
         out = P.mulaw_quantize(wav, hparams.quantize_channels)
 
         # Trim silences
-        start, end = audio.start_and_end_indices(out, hparams.silence_threshold)
+        start, end = audio.start_and_end_indices(
+            out, hparams.silence_threshold)
         wav = wav[start:end]
         out = out[start:end]
         constant_values = P.mulaw_quantize(0, hparams.quantize_channels)
