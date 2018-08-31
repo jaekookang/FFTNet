@@ -42,7 +42,7 @@ hparams = tf.contrib.training.HParams(
     log_scale_min=-7.0,
 
     # =========================== model parameters =========================== #
-    batch_size=8,
+    batch_size=1,
     hidden_channels=256,
     n_layers=11,
     freq_axis_kernel_size=3,
@@ -76,5 +76,6 @@ hparams = tf.contrib.training.HParams(
 
 def hparams_debug_string():
     values = hparams.values()
-    hp = ['  %s: %s' % (name, values[name]) for name in sorted(values) if name != 'sentences']
+    hp = ['  %s: %s' % (name, values[name])
+          for name in sorted(values) if name != 'sentences']
     return 'Hyperparameters:\n' + '\n'.join(hp)

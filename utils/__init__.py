@@ -90,7 +90,8 @@ def _asfloat(x):
 def get_available_gpus(config):
     """Returns a list of the identifiers of all visible GPUs."""
     from tensorflow.python.client import device_lib
-    local_device_protos = device_lib.list_local_devices(session_config=config)
+    # local_device_protos = device_lib.list_local_devices(session_config=config)
+    local_device_protos = device_lib.list_local_devices()
     return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
 
@@ -141,7 +142,8 @@ def local_device_setter(num_devices=1,
             ps_device_spec.merge_from(current_device)
             return ps_device_spec.to_string()
         else:
-            worker_device_spec = pydev.DeviceSpec.from_string(worker_device or "")
+            worker_device_spec = pydev.DeviceSpec.from_string(
+                worker_device or "")
             worker_device_spec.merge_from(current_device)
             return worker_device_spec.to_string()
 

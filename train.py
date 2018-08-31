@@ -1,3 +1,4 @@
+import ipdb as pdb
 import argparse
 import os
 import time
@@ -34,7 +35,8 @@ def create_train_model(feeder, ema, hp, global_step):
         model = FFTNet(hp)
         local_condition = None if feeder[3][0].dtype.is_bool else feeder[3][0]
         global_condition = None if feeder[4][0].dtype.is_bool else feeder[4][0]
-        model.forward(feeder[0][0], feeder[1][0], local_condition, global_condition)
+        model.forward(feeder[0][0], feeder[1][0],
+                      local_condition, global_condition)
         model.add_loss()
     model.add_optimizer(ema, global_step)
     return model
@@ -45,11 +47,14 @@ def create_eval_model(feeder, hp):
         model = FFTNet(hp)
         local_condition = None if feeder[3][0].dtype.is_bool else feeder[3][0]
         global_condition = None if feeder[4][0].dtype.is_bool else feeder[4][0]
-        random_local_condition = tf.expand_dims(local_condition[0, :, :], axis=0) if local_condition is not None else None
-        random_global_condition = tf.expand_dims(global_condition[0], axis=0) if global_condition is not None else None
+        random_local_condition = tf.expand_dims(
+            local_condition[0, :, :], axis=0) if local_condition is not None else None
+        random_global_condition = tf.expand_dims(
+            global_condition[0], axis=0) if global_condition is not None else None
         random_target = tf.expand_dims(feeder[1][0][0, :], axis=0)
         # for eval, we only use one to generate
-        model.predict(random_local_condition, random_global_condition, targets=random_target)
+        model.predict(random_local_condition,
+                      random_global_condition, targets=random_target)
     return model
 
 
@@ -59,9 +64,12 @@ def get_inputs(feeder, num_gpus):
         return [[inputs], [targets], [input_lengths], [local_conditions], [global_conditions]]
     tower_inputs = tf.split(inputs, num_or_size_splits=num_gpus, axis=0)
     tower_targets = tf.split(targets, num_or_size_splits=num_gpus, axis=0)
-    tower_input_lengths = tf.split(input_lengths, num_or_size_splits=num_gpus, axis=0)
-    tower_local_conditions = tf.split(local_conditions, num_or_size_splits=num_gpus, axis=0)
-    tower_global_conditions = tf.split(global_conditions, num_or_size_splits=num_gpus, axis=0)
+    tower_input_lengths = tf.split(
+        input_lengths, num_or_size_splits=num_gpus, axis=0)
+    tower_local_conditions = tf.split(
+        local_conditions, num_or_size_splits=num_gpus, axis=0)
+    tower_global_conditions = tf.split(
+        global_conditions, num_or_size_splits=num_gpus, axis=0)
     return [tower_inputs, tower_targets, tower_input_lengths, tower_local_conditions, tower_global_conditions]
 
 
@@ -93,9 +101,12 @@ def eval_step(eval_model, sess, step, eval_plot_dir, eval_audio_dir):
     y_hat = np.reshape(y_hat, [-1])
     y = np.reshape(y, [-1])
 
-    pred_wav_path = os.path.join(eval_audio_dir, 'step-{}-pred.wav'.format(step))
-    target_wav_path = os.path.join(eval_audio_dir, 'step-{}-real.wav'.format(step))
-    plot_path = os.path.join(eval_plot_dir, 'step-{}-waveplot.png'.format(step))
+    pred_wav_path = os.path.join(
+        eval_audio_dir, 'step-{}-pred.wav'.format(step))
+    target_wav_path = os.path.join(
+        eval_audio_dir, 'step-{}-real.wav'.format(step))
+    plot_path = os.path.join(
+        eval_plot_dir, 'step-{}-waveplot.png'.format(step))
 
     # Save Audio
     librosa.output.write_wav(pred_wav_path, y_hat, hparams.sample_rate)
@@ -124,7 +135,8 @@ def train(log_dir, args, hp):
 
     # sess config
     config = tf.ConfigProto(
-        gpu_options=tf.GPUOptions(force_gpu_compatible=True, allow_growth=True),
+        gpu_options=tf.GPUOptions(
+            force_gpu_compatible=True, allow_growth=True),
         allow_soft_placement=True,
         log_device_placement=False,
     )
@@ -134,9 +146,18 @@ def train(log_dir, args, hp):
     controller = "/gpu:0" if num_gpus == 1 else "/cpu:0"
 
     # create dataset and iterator
-    train_dataset = get_dataset(args.train_file, True, hp, batch_size=hp.batch_size * num_gpus)
-    val_dataset = get_dataset(args.val_file, False, hp, batch_size=hp.batch_size * num_gpus)
-    iterator = tf.data.Iterator.from_structure(train_dataset.output_types, train_dataset.output_shapes)
+    if num_gpus == 0:
+        train_dataset = get_dataset(
+            args.train_file, True, hp, batch_size=hp.batch_size)
+        val_dataset = get_dataset(args.val_file, False,
+                                  hp, batch_size=hp.batch_size)
+    else:
+        train_dataset = get_dataset(
+            args.train_file, True, hp, batch_size=hp.batch_size * num_gpus)
+        val_dataset = get_dataset(args.val_file, False,
+                                  hp, batch_size=hp.batch_size * num_gpus)
+    iterator = tf.data.Iterator.from_structure(
+        train_dataset.output_types, train_dataset.output_shapes)
     # feeder: inputs, targets, input_lengths, local_condition, global_condition
     next_inputs = iterator.get_next()
     # To Do: multi gpu training
@@ -146,9 +167,12 @@ def train(log_dir, args, hp):
     val_init = iterator.make_initializer(val_dataset)
 
     # global step
-    global_step = tf.Variable(name='global_step', initial_value=-1, trainable=False, dtype=tf.int64)
-    global_val_step = tf.Variable(name='global_val_step', initial_value=-1, trainable=False, dtype=tf.int64)
-    global_val_step_op = tf.assign_add(global_val_step, 1, name='global_val_step_add')
+    global_step = tf.Variable(
+        name='global_step', initial_value=-1, trainable=False, dtype=tf.int64)
+    global_val_step = tf.Variable(
+        name='global_val_step', initial_value=-1, trainable=False, dtype=tf.int64)
+    global_val_step_op = tf.assign_add(
+        global_val_step, 1, name='global_val_step_add')
     # apply ema to variable
     ema = tf.train.ExponentialMovingAverage(decay=hp.ema_decay)
     # create model
@@ -181,8 +205,10 @@ def train(log_dir, args, hp):
             sess.run(train_init)
             while True:
                 try:
+                    pdb.set_trace()
                     start_time = time.time()
-                    step, loss, _, = sess.run([global_step, train_model.loss, train_model.optimize])
+                    step, loss, _, = sess.run(
+                        [global_step, train_model.loss, train_model.optimize])
                     train_loss_window.append(loss)
                     if step % 10 == 0:
                         message = 'Epoch {:4d} Train Step {:7d} [{:.3f} sec/step step_loss={:.5f} avg_loss={:.5f}]'.format(
@@ -191,7 +217,8 @@ def train(log_dir, args, hp):
 
                     if step % args.checkpoint_interval == 0:
                         saver.save(sess, checkpoint_path, step)
-                        save_log(sess, step, train_model, plot_dir, audio_dir, hp)
+                        save_log(sess, step, train_model,
+                                 plot_dir, audio_dir, hp)
 
                     if step % args.summary_interval == 0:
                         print('Writing summary at step {}'.format(step))
@@ -214,7 +241,8 @@ def train(log_dir, args, hp):
                     print(message)
 
                     if step % args.eval_interval == 0:
-                        eval_step(eval_model, sess, step, eval_plot_dir, eval_audio_dir)
+                        eval_step(eval_model, sess, step,
+                                  eval_plot_dir, eval_audio_dir)
 
                     if step % args.summary_val_interval == 0:
                         add_test_stats(summary_writer, step, loss)
@@ -243,10 +271,13 @@ def main():
     parser.add_argument('--val_file', default='training_data/val.txt')
     parser.add_argument('--name', help='Name of logging directory.')
     parser.add_argument('--model', default='fftnet')
-    parser.add_argument('--preset', default=None, type=str, help='the preset config json file')
-    parser.add_argument('--output_dir', default='output/', help='folder to contain synthesized mel spectrograms')
+    parser.add_argument('--preset', default=None, type=str,
+                        help='the preset config json file')
+    parser.add_argument('--output_dir', default='output/',
+                        help='folder to contain synthesized mel spectrograms')
 
-    parser.add_argument('--restore_step', default=None, type=int, help='the restore step')
+    parser.add_argument('--restore_step', default=None,
+                        type=int, help='the restore step')
 
     parser.add_argument('--summary_interval', type=int, default=200,
                         help='Steps between running summary ops')
@@ -258,7 +289,8 @@ def main():
                         help='Steps between writing checkpoints')
     parser.add_argument('--epochs', type=int, default=2000,
                         help='total number of tacotron training steps')
-    parser.add_argument('--tf_log_level', type=int, default=2, help='TensorFlow C++ log level.')
+    parser.add_argument('--tf_log_level', type=int,
+                        default=2, help='TensorFlow C++ log level.')
     args = parser.parse_args()
 
     # load preset config, so u don't need to change anything in the hparams
@@ -270,8 +302,5 @@ def main():
     train(log_dir, args, hp)
 
 
-
 if __name__ == "__main__":
     main()
-
-
