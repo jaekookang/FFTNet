@@ -42,7 +42,7 @@ hparams = tf.contrib.training.HParams(
     log_scale_min=-7.0,
 
     # =========================== model parameters =========================== #
-    batch_size=1,
+    batch_size=8,
     hidden_channels=256,
     n_layers=11,
     freq_axis_kernel_size=3,

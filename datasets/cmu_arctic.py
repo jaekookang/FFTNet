@@ -15,7 +15,8 @@ def build_from_path(hparams, in_dir, out_dir, num_workers=1, tqdm=lambda x: x):
     futures = []
 
     # speakers = cmu_arctic.available_speakers
-    speakers = ['bdl', 'clb', 'rms', 'slt']
+    # speakers = ['bdl', 'clb', 'rms', 'slt']
+    speakers = ['slt']
 
     wd = cmu_arctic.WavFileDataSource(in_dir, speakers=speakers)
     wav_paths = wd.collect_files()

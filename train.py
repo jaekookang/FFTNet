@@ -156,6 +156,7 @@ def train(log_dir, args, hp):
             args.train_file, True, hp, batch_size=hp.batch_size * num_gpus)
         val_dataset = get_dataset(args.val_file, False,
                                   hp, batch_size=hp.batch_size * num_gpus)
+
     iterator = tf.data.Iterator.from_structure(
         train_dataset.output_types, train_dataset.output_shapes)
     # feeder: inputs, targets, input_lengths, local_condition, global_condition

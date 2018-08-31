@@ -4,6 +4,12 @@
 
 a TensorFlow implementation of the [FFTNet](http://gfx.cs.princeton.edu/pubs/Jin_2018_FAR/)
 
+## My log
+- 2018-08-30
+  - feeder (iterator) had an issue: it reaches outOfRange error at every epoch.
+  - {Iterator,feeder} has to be checked
+
+
 ## Quick Start
 1. install requirements
 ```
